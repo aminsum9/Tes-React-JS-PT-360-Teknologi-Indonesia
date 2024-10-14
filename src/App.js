@@ -209,7 +209,7 @@ function App() {
       body: formData
     }).then(ress => ress.json()).then((ress) => {
       if (ress.success) {
-        // 
+        window.location.href = '/';
       }
     })
   }
@@ -303,7 +303,7 @@ function App() {
                   setSelectedEditProd(item)
                   setModalEditProd(true)
                 }}>ubah</button>
-                <button style={{ marginLeft: 10 }} onClick={() => deleteProd(item.Id)}>hapus</button>
+                <button type="button" style={{ marginLeft: 10 }} onClick={() => deleteProd(item.Id)}>hapus</button>
               </td>
             </tr>)
           })}
