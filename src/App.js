@@ -35,9 +35,7 @@ function App() {
   ]);
 
   const setNewProductPrice = (value, index) => {
-
     newProductPrices[index].Unit = value;
-
   }
 
   const setNewProductPriceDetailTier = (value, index, idx) => {
@@ -61,10 +59,53 @@ function App() {
   }
 
   // edit product
-  const [selectedEditProd, setSelectedEditProd] = React.useState({});
-  const [editedName, setEditedName] = React.useState('');
-  const [editedDesc, setEditedDesc] = React.useState('');
-  const [editedCategory, setEditedCategory] = React.useState('');
+  var [selectedEditProd, setSelectedEditProd] = React.useState({});
+  var [editedName, setEditedName] = React.useState('');
+  var [editedDesc, setEditedDesc] = React.useState('');
+  var [editedCategory, setEditedCategory] = React.useState('');
+  var [editedProductPrices, setEditedProductPrices] = React.useState([]);
+
+  const setEditedProductPrice = (value, index) => {
+    var dataEditedProdPrice = [...editedProductPrices];
+    dataEditedProdPrice[index] = { ...dataEditedProdPrice[index], Unit: value };
+    setEditedProductPrices(dataEditedProdPrice)
+  }
+
+  const setEditedProductPriceDetailTier = (value, index, idx) => {
+    var dataEditedProdPrice = [...editedProductPrices];
+
+    dataEditedProdPrice[index] = {
+      ...dataEditedProdPrice[index],
+      PriceDetails: dataEditedProdPrice[index].PriceDetails.map(data =>
+        idx === idx ? { ...data, Tier: value } : data
+      )
+    };
+    setEditedProductPrices(dataEditedProdPrice)
+  }
+
+  const setEditedProductPriceDetailPrice = (value, index, idx) => {
+    var dataEditedProdPrice = [...editedProductPrices];
+
+    dataEditedProdPrice[index] = {
+      ...dataEditedProdPrice[index],
+      PriceDetails: dataEditedProdPrice[index].PriceDetails.map(data =>
+        idx === idx ? { ...data, Price: value } : data
+      )
+    };
+    setEditedProductPrices(dataEditedProdPrice)
+  }
+
+  const addNewEditedProductPrice = () => {
+    setEditedProductPrices([...editedProductPrices, {
+      Unit: "",
+      PriceDetails: [
+        {
+          Tier: "",
+          Price: ""
+        }
+      ]
+    }]);
+  }
 
   React.useEffect(() => {
     getProducts()
@@ -77,7 +118,7 @@ function App() {
   }, [page, keyword, tier, category]);
 
   const getProducts = () => {
-    fetch(`http://0.0.0.0:8000/api/product?page=${page}&paging=${paging}&keyword=${keyword}&tier=${tier}&product_category=${category}`).then(ress => ress.json()).then((ress) => {
+    fetch(`http://localhost:8000/api/product?page=${page}&paging=${paging}&keyword=${keyword}&tier=${tier}&product_category=${category}`).then(ress => ress.json()).then((ress) => {
       if (ress.success) {
         setProduct(ress.data.data)
         setTotal(ress.data.total)
@@ -100,19 +141,19 @@ function App() {
 
       for (let j = 0; j < element.PriceDetails.length; j++) {
         const ePriceDetail = element.PriceDetails[j];
-        
+
         formData.append(`ProductPrices[${i}][PriceDetails][${j}][Tier]`, ePriceDetail.Tier)
         formData.append(`ProductPrices[${i}][PriceDetails][${j}][Price]`, ePriceDetail.Price)
       }
-      
+
     }
 
-    fetch(`http://0.0.0.0:8000/api/product/add`, {
+    fetch(`http://localhost:8000/api/product/add`, {
       method: 'POST',
       body: formData
     }).then(ress => ress.json()).then((ress) => {
       if (ress.success) {
-        // 
+        window.location.href = '/';
       }
     })
   }
@@ -125,16 +166,36 @@ function App() {
     formData.append('Product_Category', editedCategory)
     formData.append('Description', editedDesc)
 
-    fetch(`http://0.0.0.0:8000/api/product/update`, {
+    for (let i = 0; i < editedProductPrices.length; i++) {
+      var element = editedProductPrices[i];
+
+      if(element.Id){
+        formData.append(`ProductPrices[${i}][Id]`, element.Id)
+      }
+      formData.append(`ProductPrices[${i}][Unit]`, element.Unit)
+
+      for (let j = 0; j < element.PriceDetails.length; j++) {
+        var ePriceDetail = element.PriceDetails[j];
+
+        if(ePriceDetail.Id){
+          formData.append(`ProductPrices[${i}][PriceDetails][${j}][Id]`, ePriceDetail.Id)
+        }
+        formData.append(`ProductPrices[${i}][PriceDetails][${j}][Tier]`, ePriceDetail.Tier)
+        formData.append(`ProductPrices[${i}][PriceDetails][${j}][Price]`, ePriceDetail.Price)
+      }
+
+    }
+
+
+    fetch(`http://localhost:8000/api/product/update`, {
       method: 'POST',
       body: formData
     }).then(ress => ress.json()).then((ress) => {
       if (ress.success) {
-        // 
+        window.location.href = '/';
       }
     })
   }
-
 
   const deleteProd = (Id) => {
     var formData = new FormData();
@@ -143,7 +204,7 @@ function App() {
 
     formData.append('Id', Id)
 
-    fetch(`http://0.0.0.0:8000/api/product/delete`, {
+    fetch(`http://localhost:8000/api/product/delete`, {
       method: 'POST',
       body: formData
     }).then(ress => ress.json()).then((ress) => {
@@ -152,6 +213,8 @@ function App() {
       }
     })
   }
+
+  // console.log("dataEditedProdPrice: ", editedProductPrices)
 
   var arrayPages = [];
 
@@ -217,6 +280,23 @@ function App() {
               <td>{item.Description}</td>
               <td style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '90%' }}>
                 <button onClick={() => {
+
+                  var dataPrices = [];
+
+                  for (let i = 0; i < item.price.length; i++) {
+                    var e = item.price[i];
+
+                    var itemPrice = {
+                      Id: e.Id,
+                      Product_Id: e.Product_Id,
+                      Unit: e.Unit,
+                      PriceDetails: e.price_detail
+                    }
+
+                    dataPrices.push(itemPrice);
+                  }
+
+                  setEditedProductPrices(dataPrices)
                   setEditedName(item.Name)
                   setEditedCategory(item.Product_Category)
                   setEditedDesc(item.Description)
@@ -263,7 +343,7 @@ function App() {
         <form style={{ display: 'flex', flexDirection: 'column' }}>
           <input placeholder='Masukkan nama produk baru' onChange={(val) => setNewName(val.target.value)} ></input>
           <br />
-          <select value={category} onChange={(val) => setNewCategory(val.target.value)} name="Product_Category" className="select-box" >
+          <select value={category} onChange={(val) => setNewCategory(val.target.value)} name="Product_Category" >
             <option value="" >Pilih Kategori</option>
             <option value="Rokok" >Rokok</option>
             <option value="Obat" >Obat</option>
@@ -273,35 +353,34 @@ function App() {
           <textarea placeholder='Masukkan deskripsi produk baru' onChange={(val) => setNewDesc(val.target.value)}></textarea>
           <br />
           <div>
-          <h6>Product Price: </h6>
-          {newProductPrices.map((item,index) => {
-            return (
-              <div style={{width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'lightGrey', padding: 5, marginBottom: 10}} >
-                <input placeholder='Unit' onChange={(val) => setNewProductPrice(val.target.value, index)} ></input>
-                <br />
-                {item.PriceDetails.map((item, idx) => {
-                  return (
-                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                      {/* <input placeholder='Tier' onChange={(val) => setNewProductPriceDetailTier(val.target.value, index, idx)} ></input> */}
-                      <select  onChange={(val) => setNewProductPriceDetailTier(val.target.value, index, idx)} name="Tier" className="select-box" >
-                        <option value="" >Pilih Tier</option>
-                        <option value="Non Member" >Non Member</option>
-                        <option value="Basic" >Basic</option>
-                        <option value="Premium" >Premium</option>
-                      </select>
-                      <input placeholder='Price' onChange={(val) => setNewProductPriceDetailPrice(val.target.value, index, idx)} ></input>
-                    </div>
-                  )
-                })}
+            <h6>Product Price: </h6>
+            {newProductPrices.map((item, index) => {
+              return (
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'lightGrey', padding: 5, marginBottom: 10 }} >
+                  <input placeholder='Unit' onChange={(val) => setNewProductPrice(val.target.value, index)} ></input>
                   <br />
-              </div>
-            )
-          })}
-          <button type='button' onClick={() => addNewProductPrice()}>Tambah</button>
-          <br />
-          <br />
+                  {item.PriceDetails.map((item, idx) => {
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <select onChange={(val) => setNewProductPriceDetailTier(val.target.value, index, idx)} name="Tier"  >
+                          <option value="" >Pilih Tier</option>
+                          <option value="Non Member" >Non Member</option>
+                          <option value="Basic" >Basic</option>
+                          <option value="Premium" >Premium</option>
+                        </select>
+                        <input placeholder='Price' onChange={(val) => setNewProductPriceDetailPrice(val.target.value, index, idx)} ></input>
+                      </div>
+                    )
+                  })}
+                  <br />
+                </div>
+              )
+            })}
+            <button type='button' onClick={() => addNewProductPrice()}>Tambah</button>
+            <br />
+            <br />
           </div>
-          <button type="submit" onClick={() => addProduct()}>Tambah Produk</button>
+          <button type="button" onClick={() => addProduct()}>Tambah Produk</button>
         </form>
       </Modal>
       {/* modal edit product */}
@@ -314,7 +393,7 @@ function App() {
         <form style={{ display: 'flex', flexDirection: 'column' }}>
           <input placeholder='Masukkan nama produk baru' value={editedName} onChange={(val) => setEditedName(val.target.value)} ></input>
           <br />
-          <select value={editedCategory} onChange={(val) => setEditedCategory(val.target.value)} name="Product_Category" className="select-box" >
+          <select value={editedCategory} onChange={(val) => setEditedCategory(val.target.value)} name="Product_Category" >
             <option value={''} >Pilih Kategori</option>
             <option value="Rokok" >Rokok</option>
             <option value="Obat" >Obat</option>
@@ -323,7 +402,35 @@ function App() {
           <br />
           <textarea value={editedDesc} placeholder='Masukkan deskripsi produk baru' onChange={(val) => setEditedDesc(val.target.value)}></textarea>
           <br />
-          <button onClick={() => updateProduct()}>Ubah Produk</button>
+          <div>
+            <h6>Product Price: </h6>
+            {editedProductPrices.map((item, index) => {
+              return (
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'lightGrey', padding: 5, marginBottom: 10 }} >
+                  <input placeholder='Unit' value={item.Unit} onChange={(val) => setEditedProductPrice(val.target.value, index)} ></input>
+                  <br />
+                  {item.PriceDetails.map((item, idx) => {
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <select value={item.Tier} onChange={(val) => setEditedProductPriceDetailTier(val.target.value, index, idx)} name="Tier"  >
+                          <option value="" >Pilih Tier</option>
+                          <option value="Non Member" >Non Member</option>
+                          <option value="Basic" >Basic</option>
+                          <option value="Premium" >Premium</option>
+                        </select>
+                        <input value={item.Price} placeholder='Price' onChange={(val) => setEditedProductPriceDetailPrice(val.target.value, index, idx)} ></input>
+                      </div>
+                    )
+                  })}
+                  <br />
+                </div>
+              )
+            })}
+            <button type='button' onClick={() => addNewEditedProductPrice()}>Tambah</button>
+            <br />
+            <br />
+          </div>
+          <button type='button' onClick={() => updateProduct()}>Ubah Produk</button>
         </form>
       </Modal>
     </div>
